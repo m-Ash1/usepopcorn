@@ -1,4 +1,5 @@
 import { Fragment, useState } from "react";
+import StarRating from "./StarRating";
 
 const tempMovieData = [
   {

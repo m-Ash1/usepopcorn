@@ -7,11 +7,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <StarRating
       maxRating={5}
-      size={48}
-      color={"red"}
+      size={24}
+      color={"orange"}
       messages={["Terrible", "Bad", "Okay", "Good", "Amazing"]}
-      defaultRating={3}
+      defaultRating={0}
     />
     <StarRating maxRating={15} size={48} color={"blue"} />
+
+    {/* <App/> */}
   </React.StrictMode>
 );

@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import React from "react";
 
 const containerStyle = {
@@ -98,6 +99,16 @@ const Star = ({ onRate, full, onHover, onLeaveHover, color, size }) => {
       )}
     </span>
   );
+};
+
+StarRating.propTypes = {
+  maxRating: PropTypes.number,
+  color: PropTypes.string,
+  size: PropTypes.number,
+  className: PropTypes.string,
+  messages: PropTypes.array,
+  defaultRating: PropTypes.number,
+  onSet: PropTypes.func,
 };
 
 export default StarRating;
