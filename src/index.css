@@ -162,7 +162,8 @@ body {
   transition: all 0.3s;
 }
 
-.list.list-movies li:hover {
+.list.list-movies li:hover,
+.list.list-movies li.selected {
   background-color: var(--color-background-100);
 }
 
@@ -365,7 +366,13 @@ FONT SIZE SYSTEM (px)
   .main {
     flex-wrap: wrap;
   }
-  .box{
-    height: 50vh;
+  .main {
+    height: auto;
+  }
+  .searched {
+    height: 30vh;
+  }
+  .watched {
+    height: 70vh;
   }
 }

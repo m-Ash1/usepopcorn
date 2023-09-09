@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from "react";
-import { MagnifyingGlass } from "react-loader-spinner";
+import { MagnifyingGlass, Puff } from "react-loader-spinner";
+import StarRating from "./StarRating";
 
 const average = (arr) =>
   arr.reduce((acc, cur, i, arr) => acc + cur / arr.length, 0);
@@ -12,10 +13,20 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
+  const [selectedId, setSelectedId] = useState(null);
+
+  const handleSelect = (id) => {
+    setSelectedId(() => (selectedId === id ? null : id));
+  };
+
+  const handleCloseSelection = () => {
+    setSelectedId(() => null);
+  };
 
   useEffect(() => {
     async function fetchMovies() {
       try {
+        setError(() => "");
         setIsLoading(true);
         const response = await fetch(
           `https://www.omdbapi.com/?apikey=${KEY}&s=${query}`
@@ -24,12 +35,20 @@ export default function App() {
         if (!response.ok) throw new Error(response.statusText);
 
         const data = await response.json();
-        setMovies(() => data.Search || []);
+
+        if (data.Response === "False") throw new Error("Movie not found");
+        setMovies(() => data.Search);
+        setError(() => "");
       } catch (error) {
         setError(() => error.message);
       } finally {
         setIsLoading(false);
       }
+    }
+    if (query.length < 3) {
+      setMovies(() => []);
+      setError(() => "");
+      return;
     }
     fetchMovies();
   }, [query]);
@@ -41,20 +60,34 @@ export default function App() {
         <NumResults movies={movies} />
       </NavBar>
       <Main>
-        <Box>
+        <Box className="searched">
           {error ? (
             <div className="loader">{error}</div>
           ) : isLoading ? (
             <Loader />
           ) : (
-            <Movielist movies={movies} />
+            <Movielist
+              selectedId={selectedId}
+              movies={movies}
+              handleSelect={handleSelect}
+            />
           )}
         </Box>
         <Box
+          className="watched"
           element={
             <>
-              <WatchedSummary watched={watched} />
-              <WatchedMoviesList watched={watched} />
+              {selectedId ? (
+                <MovieDetails
+                  selectedId={selectedId}
+                  handleCloseSelection={handleCloseSelection}
+                />
+              ) : (
+                <>
+                  <WatchedSummary watched={watched} />
+                  <WatchedMoviesList watched={watched} />
+                </>
+              )}
             </>
           }
         />
@@ -63,14 +96,23 @@ export default function App() {
   );
 }
 
-function Loader() {
-  return (
-    <MagnifyingGlass
+function Loader({ loaderName }) {
+  return loaderName == "spin" ? (
+    <Puff
+      height="60"
+      width="60"
+      radius={1}
+      color="#6741d9"
+      ariaLabel="puff-loading"
+      wrapperStyle={{}}
+      wrapperClass="loader"
       visible={true}
+    />
+  ) : (
+    <MagnifyingGlass
       height="50"
       width="50"
       ariaLabel="MagnifyingGlass-loading"
-      wrapperStyle={{}}
       wrapperClass="MagnifyingGlass-wrapper loader"
       glassColor="#6741d9"
       color="#ffffff"
@@ -112,18 +154,94 @@ function Main({ children }) {
   return <main className="main">{children}</main>;
 }
 
-function Movielist({ movies }) {
+function Movielist({ movies, handleSelect, selectedId }) {
   return (
-    <ul className="list">
+    <ul className="list list-movies">
       {movies?.map((movie) => (
-        <Movie key={movie.imdbID} movie={movie} />
+        <Movie
+          key={movie.imdbID}
+          movie={movie}
+          onSelect={handleSelect}
+          selectedId={selectedId}
+        />
       ))}
     </ul>
   );
 }
-function Movie({ movie }) {
+
+function MovieDetails({ selectedId, handleCloseSelection }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [movie, setMovie] = useState({});
+  const {
+    Title: title,
+    Year: year,
+    Rated: rated,
+    Released: released,
+    Runtime: runtime,
+    Genre: genre,
+    Plot: plot,
+    Poster: poster,
+    Actors: actors,
+    imdbRating,
+    Director: director,
+  } = movie;
+
+  useEffect(() => {
+    async function getMovieDetails() {
+      setIsLoading(() => true);
+      const res = await fetch(
+        `https://www.omdbapi.com/?apikey=${KEY}&i=${selectedId}`
+      );
+      const data = await res.json();
+      setMovie(() => data);
+      setIsLoading(() => false);
+    }
+    getMovieDetails();
+  }, [selectedId]);
   return (
-    <li>
+    <div className="details">
+      {isLoading ? (
+        <Loader loaderName="spin" />
+      ) : (
+        <>
+          <header>
+            <button className="btn-back" onClick={handleCloseSelection}>
+              &larr;
+            </button>
+            <img src={poster} alt={`Poster of ${movie} movie`} />
+            <div className="details-overview">
+              <h2>{title}</h2>
+              <p>
+                {released} &bull; {runtime}
+              </p>
+              <p>{genre}</p>
+              <p>
+                <span>⭐</span> {imdbRating}
+              </p>
+            </div>
+          </header>
+          <section>
+            <div className="rating">
+              <StarRating maxRating={10} size={24} />
+            </div>
+            <p>
+              <em>{plot}</em>
+            </p>
+            <p>Starring {actors}</p>
+            <p>Directed by {director}</p>
+          </section>
+        </>
+      )}
+    </div>
+  );
+}
+
+function Movie({ movie, onSelect, selectedId }) {
+  return (
+    <li
+      onClick={() => onSelect(movie.imdbID)}
+      className={selectedId === movie.imdbID ? "selected" : ""}
+    >
       <img src={movie.Poster} alt={`${movie.Title} poster`} />
       <h3>{movie.Title}</h3>
       <div>
@@ -197,11 +315,11 @@ function WatchedMovie({ movie }) {
   );
 }
 
-function Box({ element, children }) {
+function Box({ className, element, children }) {
   const [isOpen, setIsOpen] = useState(true);
 
   return (
-    <div className="box">
+    <div className={className + " box"}>
       <button className="btn-toggle" onClick={() => setIsOpen((open) => !open)}>
         {isOpen ? "–" : "+"}
       </button>
