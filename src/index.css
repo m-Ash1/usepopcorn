@@ -377,3 +377,8 @@ FONT SIZE SYSTEM (px)
     height: 70vh;
   }
 }
+@media (max-width: 400px) {
+  .msg {
+    display: none;
+  }
+}
